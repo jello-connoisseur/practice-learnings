@@ -10,29 +10,28 @@
 <script>
 const brands = ['Eckhaus Latta: NYC', 'Emily Watson: Melbourne', 'Timosassen: Antwerp', 'Prada: Milan']
 
-const p = document.querySelector("p")
-const input = document.querySelector("input")
-const btn = document.querySelector("button")
+const p = document.querySelector("p");
+const input = document.querySelector("input");
+const btn = document.querySelector("button");
 
+btn.addEventListener("click", () =>{
+    const searchedBrand = input.value.toLowerCase();
 
-btn.addEventListener('click', () =>{
-	const searchName = input.value.toLowerCase();
     input.value = '';
     input.focus();
-  	p.innerHTML = '';
-    
-    for (const brand of brands) {
-    	const splitBrand = brand.split(": ");
-        if (splitBrand[0].toLowerCase() === searchName) {
-        	p.innerHTML = splitBrand[0] + " is based in " + splitBrand[1] + ".";
-            break;
+    p.innerHTML = '';
+
+    for(brand of brands){
+        const splitBrands = brand.split(": ");
+        if (splitBrands[0].toLowerCase() === searchedBrand){
+            p.innerHTML = splitBrands[0] + ' is based in ' + splitBrands[1] + ".";
         }
     }
     if (p.innerHTML === ''){
-        p.innerHTML = 'Oops! This is not one of my fave brands and it is not in the database lol soz';
+        p.innerHTML = "This brand is not my fave so its not in the db, soz";
     }
-   
 })
+
 </script>
 
 </body>

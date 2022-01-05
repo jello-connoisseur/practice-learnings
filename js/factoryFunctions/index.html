@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+
+<script>
+    //before ECMA Script 5, no simple way to say "I want to make an object whose protytpe is this other object". Would have to do something like:
+    const proto = {protoprop: "protoprop"}; 
+    function c() {} //dummy throwaway constructor
+    c.prototype = proto;
+    const obj = new c();
+    proto.isPrototypeOf(obj); //true
+
+    //ECMA introduces "Object.create()" method, and now can be simplified to:
+    //Object.create(prototype)
+    const proto2 = {protoprop: "protoprop"};
+    const obj2 = Object.create(proto2); 
+    prot2o.isPrototypeOf(obj2); //true
+
+
+    //CONSTRUCTORS
+    //Problem with "new" keyword: 
+    //1. forgetting it pollutes the global namespace
+    //2. "instanceof" breaks when switching prototypes -> 
+    //3. constructor property is set only once. When a function is defined, prototype property is initialized to an object 
+    //   constructor property pointing back to the function itself. 
+    //   Therefore, if you set prototype proprty to some other object, all objects created by the function will have constructor properties set to "Object".
+
+    //FACTORY FUNCTIONS
+    //1. CONVERSION FROM CONSTRUCTORS:
+    //constructor
+    function MyObject(data){
+        this.data = data;
+    }
+    
+    MyObject.prototype = {
+        getData: function(){
+            return this.data;
+        }
+    }
+
+    var o = new MyObject("hi");
+
+    //factory function
+    function MyObject(data){
+        var obj = Object.create(MyObject.proto);
+        obj.data = data;
+        return obj;
+    }
+
+    MyObject.proto = {
+        getData: function(){
+            return this.data;
+        }
+    }
+    var o = MyObject("hello")
+
+
+    //factory function pattern is similar to constructors, 
+    //but instead of using "new" to create an object, factory functions simply set up and return the new object when you call the function
+    const personFactory = (name, age) => {
+        const sayHello = () => console.log("hi");
+        return {name, age, sayHello}
+    };
+    const jewon = personFactory("Jewon", 25);
+
+    console.log(jewon.name) //"Jewon"
+    jewon.sayHello(); //calls sayHello() and logs "hi"
+
+    //do same thing in constructor:
+    function person(name, age) {
+        this.name = name;
+        this.age = age;
+        this.sayHello = () => console.log('hi');
+    }
+    const jewon = new person("Jewon", 25);
+
+    //object shorthand
+    //if you are creating an object where you are referring to a variable that has the exact same name as the object property you are creating, condense it.
+    //instead of...
+    return {name: name, age:age, sayHello:sayHello};
+    //can shorten it to...
+    return {name, age, sayHello}
+
+
+    //Private Variables and Functions
+    const FactoryFunction = string => {
+        const capitalizeString = () => string.toUpperCase();
+        const printString = () => console.log(capitalizeString);
+        return {printString};
+    }
+
+    const fashion = FactoryFunction('fashion');
+
+    printString(); //error
+    capitalizeString(); //error
+    fashion.capitalizeString(); //error
+    fashion.printString(); //prints "fashion"
+
+    //the only way to use the functions inside the factory function is to "return" them in the object
+    //this is why we can call fashion.printString() but not fashion.capitalizeStirng()
+    //Closure: functions retain their scope even if they are passed around and called outside of that scope
+    //...even though we can't access capitalizeString() function, printString() can. Bc printString has access to everything inside of the FactoryFunction, even if it gets called outside of the function
+
+    //another example
+    const counterCreator = () => {
+        let count = 0;
+        return () => {
+            console.log(count);
+            count++;
+        };
+    };
+    const counter = counterCreator();
+
+    counter(); //0
+    counter(); //1
+    counter() //2
+
+    //explanation: counterCreator initializes a local variable "count" and then returns a function.
+    //to use this function, have to assign it to a variable.
+    //everytime we use it, it logs the count and then increments it
+    //counter()calls the return value of counterCreator -> counter function is a closure. (has access to the variable "count", and can both print and increment it, but there is no other way for the program to access "count")
+
+    /* 
+    Private Variables & Functions
+    -- used in the workings of our objects that are NOT intended to be used elsewhere in the program. 
+    -- capitalizeString() is a private function, while printString() is public
+*/
+    //More examples of Factory Functions:
+    //pay attention to the private functions and variables!! ex. health, die
+
+    const Player = (name, level) => {
+        let health = level * 2;
+        const getLevel = () => level;
+        const getName = () => name;
+        const die = () => {
+            //uhhh
+        };
+        const damage = x => {
+            health -= x;
+            if (health <= 0){
+                die();
+            }
+        };
+        const attack = enemy => {
+            if (level < enemy.getLevel()){
+                damage(1);
+                console.log(`${enemy.getName} has damaged ${name}`);
+            }
+            if (level >= enemy.getLevel()){
+                enemy.damage(1);
+                console.log(`${name} has damaged ${enemy.getName}`);
+            }
+        };
+
+        return {attck, damage, getLevel, getName};
+    }
+
+    const jewon = Player("Jewon", 10);
+    const badGuy = Player("Thief", 5);
+
+    jewon.attack(badGuy);
+
+    /*
+    Inheritance with factories:
+    -- inheritance: giving our objects access to the methods and properties of another object.
+    -- how do we do it in Factory Functions?
+    */ 
+
+   //Method 1 -- if you want to pick and choose which functions you want to include in the new object:
+   const Person = (name) => {
+       const sayName = () => console.log('hello my name is ' + name);
+       return {sayName};
+   }
+   const Nerd = (name) => {
+       //create a person and pull out the sayName function
+       const {sayName} = Person(name);
+       const doSomethingNerdy = () => console.log('hi');
+       return {sayName, doSomethingNerdy};
+   }
+
+   const jewon = Nerd("Jewon");
+   jewon.sayName(); // hello my name is jewon
+
+   //Method 2 -- if you want to lump all of it in the new object.
+   //utilize Object.assign
+   const Nerd = (name) => {
+       const prototype = Person(name);
+       const doSomethingNerdy = () => console.log('hi');
+       return Object.assign({}, prototype, doSomethingNerdy);
+
+   }
+
+
+   /*
+   *** Delegation/ Differential Inheritance ***
+   - a delegate prototype is an object that serves as a base for another project. 
+   - when you inherit from a delegate prototype, the new obj gets a reference to the prototype. 
+   -- when you try to access a property of an obj, checks the obj's own properties first. 
+   --- if not there, checks [[prototype]], and if not there, up the prototype chain until it reaches Object.prototoype. 
+   - this preserves memory usage as you only need one copy of each method to be shared by all instances
+   */
+   const proto = (name) => {
+       const hello = () => console.log('hello' + this.name);
+       return {hello};
+   };
+   const greeter = (name) => {
+       const prototype = proto(name);
+       return Object.assign({}, prototype)
+   };
+
+   /*
+   IIFE
+   - immediately invoked functioned expressions
+   -- key thing about JS expressions: they return values. 
+   --- if we want to invoke the function expressions right away, just need to put it around parentheses on the end.
+   - (function(){
+    });
+   - why: data privacy
+     - any variables declared within IIFE cannot be accessed by the outside world
+  */
+
+  /*
+  Module Pattern Basics
+  - easy to use
+  - creaetes encapsulation of code
+  - usually only one instance exists
+  - great for services and testing
+  */
+
+//   Creating a Module
+//   - create an IIFE
+    (function(){
+        'use strict';
+    })();
+
+//   Exporting the Module
+//   - assign the module to a variable that we can use to call our module's methods
+    var myModule = (function(){
+        'use strict';
+    })();
+//   - create a public method for module to call. To expose this method to code outside, return an Object with the methods defined.
+    var myModule = (function(){ 
+        'use strict';
+        return {
+            publicMethod: function(){
+                console.log("hello world!");
+            }
+        };
+    })();
+    myModule.publicMethod(); //outputs "hello world!"
+
+//  Private Methods & Properties
+//  - create private methods & state using closures
+    var myModule = (function(){
+        'use strict';
+
+        var _privateProperty = 'hello world';
+
+        function _privateMethod(){
+            console.log(_privateProperty + 'is private');
+        }
+
+        return {
+            publicMethod: function(){
+                _privateMethods();
+            }
+        };
+
+    })();
+
+    myModule.publicMethod(); //"hello world"
+    console.log(moModule._privateProperty); //undefined
+    myModule.privateMethod(); // error 
+//  Revealing Module Pattern
+//  - using the return statement, we can return a object literal that 'reveals' only the methods or properties we want publicly available
+//  - can quickly see what is publicly available for use
+    var myModule = (function(){
+        'use strict';
+
+        var _privateProperty = 'hello world';
+        var publicProperty = 'i am a public property';
+
+        function _privateMethod(){
+            console.log(_privateProperty + 'is private');
+        }
+
+        function publicMethod(){
+            _privateMethod();
+        }
+
+        return {
+            publicMethod: publicMethod,
+            publicProperty: publicProperty
+
+        };
+
+    })();
+
+
+
+
+
+  
+
+   
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    //constructor
+    function Greeter(name){
+        this.name = name;
+    }
+
+    Greeter.prototype.hello = function() {
+        return 'Hello, my name is ' + this.name;
+    }
+
+    const jane = new Greeter('Jane');
+    const message = jane.hello();
+
+    console.log(message);
+
+    //factory functions
+    const proto = {
+        hello(){
+            return 'Hello, my name is ' + this.name;
+        }
+    };
+
+    const greeter = (name) => Object.assign(Object.create(proto), {
+        name
+    });
+
+    // same as:
+    // function greeter(name) {
+    //     let obj = Object.create(proto);
+    //     obj.name = name;
+    //     return obj;
+    // }
+
+    const george = greeter('George');
+    const message2 = george.hello();
+    console.log(message2);
+
+
+
+</script>
+</html>
